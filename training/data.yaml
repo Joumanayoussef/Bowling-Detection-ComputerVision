@@ -1,0 +1,15 @@
+names:
+- ball
+- car
+- fallen pin
+- standing pin
+nc: 4
+roboflow:
+  license: CC BY 4.0
+  project: bowling-cv-project-rqaik
+  url: https://app.roboflow.com/joumanas-workspace/bowling-cv-project-rqaik/4
+  version: 4
+  workspace: joumanas-workspace
+test: valid/images
+train: train/images
+val: valid/images
