@@ -27,11 +27,11 @@ Both modes use the **same model** (`models/best.pt`) and the **same pipeline** (
 | Mode | What knocks the pins | Evaluation videos |
 |---|---|---|
 | **(a) Thrown-ball bowling** | a ball rolled by hand at a row of 6 pins | `videobowling.mp4` (side view, reflective floor, 3 rolls) |
-| **(b) RC-car bowling** (originally a course bonus task) | a remote-controlled car driven into the pins | `rc_car_side_view.mp4` (low side view, 2 pins); `first_video.mp4` (top-down, 4 pins) |
+| **(b) RC-car bowling** (course bonus task) | a remote-controlled car driven into the pins | `rc_car_side_view.mp4` (low side view, 2 pins); `first_video.mp4` (top-down, 4 pins) |
 
 The car-based signals (contact, proximity, timeout) simply never fire in ball videos. There, falls are found by class transition and chain reaction.
 
-## Android app (prototype)
+## Android app
 
 [`android-app/`](android-app/) is a Kotlin app (minSdk 26, targetSdk 34) that runs the detector **offline on the device**:
 
@@ -39,14 +39,14 @@ The car-based signals (contact, proximity, timeout) simply never fire in ball vi
 - **Live camera:** a **CameraX** `ImageAnalysis` pipeline (`CameraAnalyzer.kt`) draws boxes, pin states and the car path over the preview.
 - **Video upload:** `VideoAnalyzer.kt` analyzes a video picked from the gallery and shows the result.
 
-**This is a prototype.** It uses an earlier, simpler tracker:
+**Tracking.** The app uses a lightweight on-device tracker designed for real-time mobile use. It detects falls with two signals:
 
-- `PinTracker.kt`: a pin is marked fallen on a standing → fallen class transition;
-- `ScoreManager.kt`: a pin is also marked fallen when the car's center comes within 80 px of it.
+- **class transition:** `PinTracker.kt` marks a pin fallen when its detection changes from standing to fallen;
+- **car proximity:** `ScoreManager.kt` marks a pin fallen when the car's center comes within 80 px of it.
 
-It has **not** been updated to the five-signal logic, locked pin IDs or temporal confirmation described below, and it was not part of the evaluation.
+The mobile tracker is separate from the Python pipeline and was not part of the evaluation below.
 
-**Build (verified):** `./gradlew assembleDebug` succeeds on Windows with the JDK bundled with Android Studio (JBR 21), Android SDK platform 34 and Gradle 8.5 via the included wrapper. The APK is not committed.
+**Build:** `./gradlew assembleDebug` builds on Windows with the JDK bundled with Android Studio (JBR 21), Android SDK platform 34 and Gradle 8.5 via the included wrapper. The APK is not committed.
 
 ```bash
 cd android-app
@@ -78,9 +78,9 @@ flowchart LR
     J --> K[Annotated video + HUD<br/>JSON + summary screen]
 ```
 
-### Pin identity (the over-counting fix)
+### Pin identity
 
-An earlier script used YOLO tracker IDs. When a detection dropped out, the pin came back with a new ID and was counted again; it showed a score of 3 on a two-pin video. Now:
+Each pin keeps one fixed ID for the whole video, so a pin that drops out of detection and reappears is never counted twice:
 
 - **Setup** (1 s from the first frame with a standing pin): standing-pin boxes are clustered by center distance. A pin must appear in at least 30% of setup frames. Duplicates are merged, and IDs are assigned left to right.
 - **Afterwards** every detection is matched to the nearest *locked* pin. Standing detections match within half a pin width, or when they lie ≥80% inside the locked box (a partly occluded pin). **No pin IDs are created after setup.**
@@ -197,8 +197,6 @@ The spatial rules are implemented and unit-tested on synthetic mirror detections
 
 In `first_video.mp4` YOLO labels the upright blue pin "fallen" for over a second (false `class_transition` at 1.40 s; it really falls at 3.1 s). The car also brushes the yellow pin without knocking it over (false `car_contact` at 1.47 s).
 
-An earlier version of this project reported 4 falls at 1.50, 2.00, 2.57 and 3.47 s for this video. Frame-by-frame inspection shows 3 falls: green ~2.0 s, blue ~3.1 s, red ~5.7 s. The yellow pin is pushed but stays upright.
-
 ## Output
 
 `analyze_video.py` writes to `--out` (default `outputs/`):
@@ -248,3 +246,4 @@ python training/export_tflite.py             # -> exports/bowling_model.tflite +
 - **Camera angle.** Training images are mostly side views, so standing/fallen labels are unreliable from directly above (both false falls in the top-down video). Adjacent overlapping pins can also merge into one tracked pin.
 - **Indicative results.** Thresholds (k = 8) were tuned on the same 3 videos used for evaluation, with only 11 true falls in total.
 - **Heuristic assumptions.** Car contact assumes a touched pin falls; fall times mark the onset of evidence (up to ~0.75 s early); pins must be standing and visible during the first second.
+- **Mobile and live modes.** The [Android app](#android-app) uses a lighter two-signal tracker and was not evaluated; `live_camera.py` has not been tested on a live webcam.
