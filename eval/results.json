@@ -1,0 +1,266 @@
+[
+  {
+    "file": "first_video.mp4",
+    "view": "top-down, RC car, 4 pins",
+    "filter": {
+      "true_falls": 3,
+      "detected": 4,
+      "correct": 2,
+      "false": 2,
+      "missed": 1,
+      "never_locked": [],
+      "mean_abs_time_error_s": 0.73,
+      "events": [
+        {
+          "pin_id": 2,
+          "gt_pin": "blue",
+          "time_s": 1.4,
+          "true_s": 3.1,
+          "signal": "class_transition",
+          "verdict": "false"
+        },
+        {
+          "pin_id": 4,
+          "gt_pin": "green",
+          "time_s": 1.434,
+          "true_s": 2.0,
+          "signal": "class_transition",
+          "verdict": "correct"
+        },
+        {
+          "pin_id": 3,
+          "gt_pin": "yellow",
+          "time_s": 1.467,
+          "true_s": null,
+          "signal": "car_contact",
+          "verdict": "false"
+        },
+        {
+          "pin_id": 1,
+          "gt_pin": "red",
+          "time_s": 4.801,
+          "true_s": 5.7,
+          "signal": "car_contact",
+          "verdict": "correct"
+        }
+      ],
+      "rejected_reflection_count": 0
+    },
+    "nofilter": {
+      "true_falls": 3,
+      "detected": 4,
+      "correct": 1,
+      "false": 3,
+      "missed": 2,
+      "never_locked": [],
+      "mean_abs_time_error_s": 0.57,
+      "events": [
+        {
+          "pin_id": 2,
+          "gt_pin": "blue",
+          "time_s": 1.4,
+          "true_s": 3.1,
+          "signal": "class_transition",
+          "verdict": "false"
+        },
+        {
+          "pin_id": 4,
+          "gt_pin": "green",
+          "time_s": 1.434,
+          "true_s": 2.0,
+          "signal": "class_transition",
+          "verdict": "correct"
+        },
+        {
+          "pin_id": 3,
+          "gt_pin": "yellow",
+          "time_s": 1.467,
+          "true_s": null,
+          "signal": "car_contact",
+          "verdict": "false"
+        },
+        {
+          "pin_id": 1,
+          "gt_pin": "red",
+          "time_s": 1.967,
+          "true_s": 5.7,
+          "signal": "class_transition",
+          "verdict": "false"
+        }
+      ],
+      "rejected_reflection_count": 0
+    }
+  },
+  {
+    "file": "whatsapp_2026-05-13_2.53.32PM.mp4",
+    "view": "low side view, RC car, 2 pins, hand-held camera drifts",
+    "filter": {
+      "true_falls": 2,
+      "detected": 2,
+      "correct": 2,
+      "false": 0,
+      "missed": 0,
+      "never_locked": [],
+      "mean_abs_time_error_s": 0.24,
+      "events": [
+        {
+          "pin_id": 1,
+          "gt_pin": "yellow",
+          "time_s": 4.262,
+          "true_s": 4.55,
+          "signal": "car_contact",
+          "verdict": "correct"
+        },
+        {
+          "pin_id": 2,
+          "gt_pin": "red",
+          "time_s": 9.968,
+          "true_s": 10.15,
+          "signal": "proximity_disappearance",
+          "verdict": "correct"
+        }
+      ],
+      "rejected_reflection_count": 6
+    },
+    "nofilter": {
+      "true_falls": 2,
+      "detected": 2,
+      "correct": 2,
+      "false": 0,
+      "missed": 0,
+      "never_locked": [],
+      "mean_abs_time_error_s": 0.29,
+      "events": [
+        {
+          "pin_id": 1,
+          "gt_pin": "yellow",
+          "time_s": 4.262,
+          "true_s": 4.55,
+          "signal": "car_contact",
+          "verdict": "correct"
+        },
+        {
+          "pin_id": 2,
+          "gt_pin": "red",
+          "time_s": 9.865,
+          "true_s": 10.15,
+          "signal": "car_contact",
+          "verdict": "correct"
+        }
+      ],
+      "rejected_reflection_count": 0
+    }
+  },
+  {
+    "file": "videobowling.mp4",
+    "view": "side view, reflective floor, thrown ball (no car), 6 pins, 3 rolls",
+    "filter": {
+      "true_falls": 6,
+      "detected": 5,
+      "correct": 5,
+      "false": 0,
+      "missed": 1,
+      "never_locked": [
+        "red (back)"
+      ],
+      "mean_abs_time_error_s": 0.46,
+      "events": [
+        {
+          "pin_id": 3,
+          "gt_pin": "red (front)",
+          "time_s": 4.428,
+          "true_s": 4.6,
+          "signal": "class_transition",
+          "verdict": "correct"
+        },
+        {
+          "pin_id": 4,
+          "gt_pin": "right yellow",
+          "time_s": 12.052,
+          "true_s": 12.8,
+          "signal": "chain_reaction",
+          "verdict": "correct"
+        },
+        {
+          "pin_id": 2,
+          "gt_pin": "left yellow",
+          "time_s": 12.352,
+          "true_s": 12.7,
+          "signal": "chain_reaction",
+          "verdict": "correct"
+        },
+        {
+          "pin_id": 5,
+          "gt_pin": "right blue",
+          "time_s": 13.584,
+          "true_s": 12.6,
+          "signal": "class_transition",
+          "verdict": "correct"
+        },
+        {
+          "pin_id": 1,
+          "gt_pin": "left blue",
+          "time_s": 25.27,
+          "true_s": 25.3,
+          "signal": "chain_reaction",
+          "verdict": "correct"
+        }
+      ],
+      "rejected_reflection_count": 71
+    },
+    "nofilter": {
+      "true_falls": 6,
+      "detected": 5,
+      "correct": 4,
+      "false": 1,
+      "missed": 2,
+      "never_locked": [
+        "red (back)"
+      ],
+      "mean_abs_time_error_s": 0.25,
+      "events": [
+        {
+          "pin_id": 3,
+          "gt_pin": "red (front)",
+          "time_s": 4.195,
+          "true_s": 4.6,
+          "signal": "class_transition",
+          "verdict": "correct"
+        },
+        {
+          "pin_id": 4,
+          "gt_pin": "right yellow",
+          "time_s": 12.485,
+          "true_s": 12.8,
+          "signal": "class_transition",
+          "verdict": "correct"
+        },
+        {
+          "pin_id": 2,
+          "gt_pin": "left yellow",
+          "time_s": 12.552,
+          "true_s": 12.7,
+          "signal": "chain_reaction",
+          "verdict": "correct"
+        },
+        {
+          "pin_id": 1,
+          "gt_pin": "left blue",
+          "time_s": 12.651,
+          "true_s": 25.3,
+          "signal": "chain_reaction",
+          "verdict": "false"
+        },
+        {
+          "pin_id": 5,
+          "gt_pin": "right blue",
+          "time_s": 12.718,
+          "true_s": 12.6,
+          "signal": "chain_reaction",
+          "verdict": "correct"
+        }
+      ],
+      "rejected_reflection_count": 0
+    }
+  }
+]

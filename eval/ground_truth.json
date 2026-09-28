@@ -1,0 +1,36 @@
+{
+  "_note": "Manually annotated by inspecting frames (see README > Evaluation). Pin positions are box centers in pixels in the first second; times are when the pin is visibly down, accurate to about +-0.2 s. Videos are not in the repo.",
+  "tolerance_s": 1.0,
+  "videos": [
+    {
+      "file": "first_video.mp4",
+      "view": "top-down, RC car, 4 pins",
+      "pins": [
+        {"name": "red",    "xy": [180, 832], "fall_s": 5.7},
+        {"name": "blue",   "xy": [300, 983], "fall_s": 3.1},
+        {"name": "yellow", "xy": [325, 641], "fall_s": null},
+        {"name": "green",  "xy": [409, 809], "fall_s": 2.0}
+      ]
+    },
+    {
+      "file": "whatsapp_2026-05-13_2.53.32PM.mp4",
+      "view": "low side view, RC car, 2 pins, hand-held camera drifts",
+      "pins": [
+        {"name": "yellow", "xy": [339, 108], "fall_s": 4.55},
+        {"name": "red",    "xy": [487, 101], "fall_s": 10.15}
+      ]
+    },
+    {
+      "file": "videobowling.mp4",
+      "view": "side view, reflective floor, thrown ball (no car), 6 pins, 3 rolls",
+      "pins": [
+        {"name": "left blue",    "xy": [162, 570], "fall_s": 25.3},
+        {"name": "left yellow",  "xy": [201, 573], "fall_s": 12.7},
+        {"name": "red (back)",   "xy": [238, 575], "fall_s": 4.2},
+        {"name": "red (front)",  "xy": [252, 585], "fall_s": 4.6},
+        {"name": "right yellow", "xy": [294, 573], "fall_s": 12.8},
+        {"name": "right blue",   "xy": [314, 572], "fall_s": 12.6}
+      ]
+    }
+  ]
+}
