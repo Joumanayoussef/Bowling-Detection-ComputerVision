@@ -1,6 +1,8 @@
-# BowlingCV — Pin-Fall Detection and Timestamping
+# Bowling Detection — Computer Vision
 
-BowlingCV watches a video of a (toy) bowling setup and reports which pins fell and when. A YOLOv8n detector, fine-tuned on a custom 4-class dataset (ball, car, standing pin, fallen pin), finds the objects in each frame. A tracking pipeline then:
+Pin-fall detection and timestamping with YOLOv8
+
+Bowling Detection watches a video of a (toy) bowling setup and reports which pins fell and when. A YOLOv8n detector, fine-tuned on a custom 4-class dataset (ball, car, standing pin, fallen pin), finds the objects in each frame. A tracking pipeline then:
 
 - locks each pin's position at the start;
 - detects each fall with five independent signals, confirmed over several frames;
@@ -25,7 +27,7 @@ Both modes use the **same model** (`models/best.pt`) and the **same pipeline** (
 | Mode | What knocks the pins | Evaluation videos |
 |---|---|---|
 | **(a) Thrown-ball bowling** | a ball rolled by hand at a row of 6 pins | `videobowling.mp4` (side view, reflective floor, 3 rolls) |
-| **(b) RC-car bowling** (originally a course bonus task) | a remote-controlled car driven into the pins | `whatsapp_2026-05-13_2.53.32PM.mp4` (low side view, 2 pins); `first_video.mp4` (top-down, 4 pins) |
+| **(b) RC-car bowling** (originally a course bonus task) | a remote-controlled car driven into the pins | `rc_car_side_view.mp4` (low side view, 2 pins); `first_video.mp4` (top-down, 4 pins) |
 
 The car-based signals (contact, proximity, timeout) simply never fire in ball videos. There, falls are found by class transition and chain reaction.
 
@@ -146,7 +148,7 @@ A detected fall counts as **correct** if that pin really fell and the time is wi
 
 | Camera view | Videos | True falls | Correct | False | Missed |
 |---|---|---|---|---|---|
-| **Side view** | `whatsapp…`, `videobowling.mp4` | 8 | **7** | **0** | 1 |
+| **Side view** | `rc_car_side_view.mp4`, `videobowling.mp4` | 8 | **7** | **0** | 1 |
 | **Top-down** | `first_video.mp4` | 3 | 2 | 2 | 1 |
 
 **Per video, with and without the reflection filter** (from [`eval/results.md`](eval/results.md)):
@@ -154,7 +156,7 @@ A detected fall counts as **correct** if that pin really fell and the time is wi
 | Video | Mode / setup | True falls | Filter ON: detected / correct / **false** / missed | Filter OFF: detected / correct / **false** / missed | Spatial-filter rejections |
 |---|---|---|---|---|---|
 | `first_video.mp4` | RC car, top-down, 4 pins | 3 | 4 / 2 / **2** / 1 | 4 / 1 / **3** / 2 | 0 |
-| `whatsapp_2026-05-13_2.53.32PM.mp4` | RC car, low side view, 2 pins, hand-held camera drifts | 2 | 2 / 2 / **0** / 0 | 2 / 2 / **0** / 0 | 6 |
+| `rc_car_side_view.mp4` | RC car, low side view, 2 pins, hand-held camera drifts | 2 | 2 / 2 / **0** / 0 | 2 / 2 / **0** / 0 | 6 |
 | `videobowling.mp4` | thrown ball, side view, reflective floor, 6 pins, 3 rolls | 6 | 5 / 5 / **0** / 1 | 5 / 4 / **1** / 2 | 71 |
 | **Total** | | 11 | 11 / 9 / **2** / 2 | 11 / 7 / **4** / 4 | |
 
@@ -166,8 +168,8 @@ A detected fall counts as **correct** if that pin really fell and the time is wi
 | `first_video.mp4` | green | 1.43 | 2.00 | class_transition | correct |
 | `first_video.mp4` | yellow | 1.47 | - (never falls) | car_contact | false |
 | `first_video.mp4` | red | 4.80 | 5.70 | car_contact | correct |
-| `whatsapp_2026-05-13_2.53.32PM.mp4` | yellow | 4.26 | 4.55 | car_contact | correct |
-| `whatsapp_2026-05-13_2.53.32PM.mp4` | red | 9.97 | 10.15 | proximity_disappearance | correct |
+| `rc_car_side_view.mp4` | yellow | 4.26 | 4.55 | car_contact | correct |
+| `rc_car_side_view.mp4` | red | 9.97 | 10.15 | proximity_disappearance | correct |
 | `videobowling.mp4` | red (front) | 4.43 | 4.60 | class_transition | correct |
 | `videobowling.mp4` | right yellow | 12.05 | 12.80 | chain_reaction | correct |
 | `videobowling.mp4` | left yellow | 12.35 | 12.70 | chain_reaction | correct |
@@ -176,7 +178,7 @@ A detected fall counts as **correct** if that pin really fell and the time is wi
 
 **What the filter actually did.** Turning the filter on cut false falls from 4 to 2. An ablation on the same cached detections shows that **all of that improvement comes from temporal confirmation (k = 8), not from the spatial reflection rules:**
 
-| Configuration | Correct / false (first / whatsapp / videobowling) |
+| Configuration | Correct / false (first_video / rc_car_side_view / videobowling) |
 |---|---|
 | spatial + temporal (default) | 2/2, 2/0, 5/0 |
 | temporal only (k = 8, no spatial rules) | 2/2, 2/0, 5/0 |
@@ -187,7 +189,7 @@ I inspected the spatial rejections frame by frame. In these videos YOLO never de
 
 - the ball, mislabelled "standing pin" (most of the 71 in `videobowling.mp4`; see [screenshot](docs/rejected_ball_mirror_rule.jpg));
 - a fallen pin lying in front of a standing one (already counted, so harmless here);
-- the car, mislabelled "fallen pin" (the 6 in the WhatsApp video).
+- the car, mislabelled "fallen pin" (the 6 in `rc_car_side_view.mp4`).
 
 The spatial rules are implemented and unit-tested on synthetic mirror detections, but they have not been shown to help on real footage. They can also reject a real object lying directly in front of a standing pin.
 
