@@ -246,4 +246,3 @@ python training/export_tflite.py             # -> exports/bowling_model.tflite +
 - **Camera angle.** Training images are mostly side views, so standing/fallen labels are unreliable from directly above (both false falls in the top-down video). Adjacent overlapping pins can also merge into one tracked pin.
 - **Indicative results.** Thresholds (k = 8) were tuned on the same 3 videos used for evaluation, with only 11 true falls in total.
 - **Heuristic assumptions.** Car contact assumes a touched pin falls; fall times mark the onset of evidence (up to ~0.75 s early); pins must be standing and visible during the first second.
-- **Mobile and live modes.** The [Android app](#android-app) uses a lighter two-signal tracker and was not evaluated; `live_camera.py` has not been tested on a live webcam.
