@@ -1,0 +1,35 @@
+# Secrets
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Outputs / training artefacts
+outputs/
+runs/
+exports/
+training/dataset/
+*.pt
+!models/best.pt
+*.onnx
+yolov8n.pt
+
+# Videos (inputs are not committed; docs/ holds only a small GIF)
+*.mp4
+*.mov
+*.MOV
+*.avi
+*.mkv
+
+# Android
+android-app/.gradle/
+android-app/.idea/
+android-app/build/
+android-app/app/build/
+android-app/local.properties
+*.iml
+.DS_Store
