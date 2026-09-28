@@ -38,7 +38,7 @@ def lying(pin_box, dx=0, dy=0):
 
 
 def make(cfg=None):
-    cfg = cfg or Config()
+    cfg = cfg or Config(confirm_frames=3)
     t = PinTracker(cfg, FPS)
     for f in range(10):  # setup: all pins standing
         t.update(f, [S(b) for b in PINS.values()], None)
@@ -60,7 +60,7 @@ def standing_except(*gone):
 
 # ── Identity ────────────────────────────────────────────────
 def test_setup_locks_pins_left_to_right_and_merges_duplicates():
-    t = PinTracker(Config(), FPS)
+    t = PinTracker(Config(confirm_frames=3), FPS)
     for f in range(10):
         dets = [S(b) for b in PINS.values()]
         dets.append(S((92, 101, 111, 141)))  # duplicate of pin 1
@@ -70,7 +70,7 @@ def test_setup_locks_pins_left_to_right_and_merges_duplicates():
 
 
 def test_setup_starts_at_first_standing_detection():
-    t = PinTracker(Config(), FPS)
+    t = PinTracker(Config(confirm_frames=3), FPS)
     for f in range(5):  # black intro
         t.update(f, [], None)
     for f in range(5, 14):
@@ -89,7 +89,7 @@ def test_no_new_pin_ids_mid_video():
 
 
 def test_unstable_setup_candidate_is_not_locked():
-    t = PinTracker(Config(), FPS)
+    t = PinTracker(Config(confirm_frames=3), FPS)
     for f in range(10):
         dets = [S(b) for b in PINS.values()]
         if f == 4:
@@ -129,7 +129,7 @@ def test_single_frame_car_contact_is_not_enough():
 
 # ── Signal 3: proximity + disappearance ─────────────────────
 def test_proximity_then_disappearance():
-    cfg = Config()
+    cfg = Config(confirm_frames=3)
     t = make(cfg)
     near_car = (225, 100, 265, 140)  # 15 px from pin 2: near, but no padded contact (pad 6 px)
     f = run(t, 10, 3, standing_except(), lambda f: near_car)
@@ -154,7 +154,7 @@ def test_missing_while_car_covers_pin_is_not_counted():
 # ── Signal 4: chain reaction ────────────────────────────────
 def test_chain_reaction():
     a, b = (90, 100, 110, 140), (125, 100, 145, 140)  # two neighbouring pins, 15 px apart
-    t = PinTracker(Config(), FPS)
+    t = PinTracker(Config(confirm_frames=3), FPS)
     for f in range(10):
         t.update(f, [S(a), S(b)], None)
     # Pin 1 falls to the right; its body lies across pin 2's base. The body is
@@ -168,7 +168,7 @@ def test_chain_reaction():
 
 # ── Signal 5: timeout ───────────────────────────────────────
 def test_timeout_after_car_passed():
-    cfg = Config()
+    cfg = Config(confirm_frames=3)
     t = make(cfg)
     passing = (190, 220, 210, 240)  # 80 px below pin 2: passed (<4x size) but not near (>1.5x)
     f = run(t, 10, 3, standing_except(), lambda f: passing)
@@ -194,3 +194,20 @@ def test_events_by_time_renumbers_by_onset():
     from bowling_cv.pin_tracker import FallEvent
     t.events += [FallEvent(1, 1, TIMEOUT, 30, 3.0, 50, 5.0), FallEvent(2, 2, CAR_CONTACT, 20, 2.0, 22, 2.2)]
     assert [(e.pin_id, e.order) for e in t.events_by_time()] == [(2, 1), (1, 2)]
+
+
+# ── Drift following ─────────────────────────────────────────
+def test_locked_box_follows_slow_camera_drift():
+    t = make()
+    for f in range(10, 110):  # the whole scene drifts 0.5 px/frame to the left: 50 px total
+        dx = -(f - 9) * 0.5
+        t.update(f, [S((b[0] + dx, b[1], b[2] + dx, b[3])) for b in PINS.values()], None)
+    assert all(p.standing_seen for p in t.pins.values())
+    assert t.pins[1].ref_box[0] < 90 - 40
+
+
+def test_shape_change_does_not_drag_locked_box():
+    t = make()
+    wide = (80, 100, 125, 140)  # pin 1 tilting: box 45 px wide instead of 20
+    run(t, 10, 20, lambda f: [S(wide)] + standing_except(1)(f))
+    assert t.pins[1].ref_box == PINS[1]

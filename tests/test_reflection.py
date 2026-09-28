@@ -32,7 +32,7 @@ def F(b):
 
 
 def test_is_mirror_of_geometry():
-    cfg = Config()
+    cfg = Config(confirm_frames=3)
     pin = PINS[0]
     assert is_mirror_of(mirror(pin), pin, cfg)
     assert not is_mirror_of(mirror(pin, gap=30), pin, cfg)                 # not touching
@@ -42,7 +42,7 @@ def test_is_mirror_of_geometry():
 
 
 def test_floor_line_row_and_scatter():
-    cfg = Config()
+    cfg = Config(confirm_frames=3)
     line, _ = FloorLine.fit(PINS, cfg)
     assert line is not None and abs(line.y_at(200) - 140) < 1e-6
     scattered = [(90, 100, 110, 140), (190, 300, 210, 340), (290, 20, 310, 60)]
@@ -66,7 +66,7 @@ def _run_with_mirror_fallen(cfg):
 
 
 def test_filter_rejects_mirror_and_prevents_false_fall():
-    t = _run_with_mirror_fallen(Config())
+    t = _run_with_mirror_fallen(Config(confirm_frames=3))
     assert t.score == 0
     reasons = {r.reason for r in t.reflection.rejections}
     assert MIRROR in reasons
@@ -74,26 +74,26 @@ def test_filter_rejects_mirror_and_prevents_false_fall():
 
 
 def test_without_filter_the_mirror_causes_a_false_fall():
-    t = _run_with_mirror_fallen(Config().without_reflection_filter())
+    t = _run_with_mirror_fallen(Config(confirm_frames=3).without_reflection_filter())
     assert t.score == 1
     assert t.reflection.rejections == []
 
 
 def test_mirror_is_not_locked_as_pin():
-    t = PinTracker(Config(), FPS)
+    t = PinTracker(Config(confirm_frames=3), FPS)
     for f in range(10):
         t.update(f, [S(b) for b in PINS] + [S(mirror(PINS[0]))], None)
     assert len(t.pins) == 3
     assert [r.reason for r in t.reflection.rejections] == ["mirror_at_lock"]
 
-    t = PinTracker(Config().without_reflection_filter(), FPS)
+    t = PinTracker(Config(confirm_frames=3).without_reflection_filter(), FPS)
     for f in range(10):
         t.update(f, [S(b) for b in PINS] + [S(mirror(PINS[0]))], None)
     assert len(t.pins) == 4
 
 
 def test_below_floor_rejected_in_row_layout():
-    t = PinTracker(Config(), FPS)
+    t = PinTracker(Config(confirm_frames=3), FPS)
     for f in range(10):
         t.update(f, [S(b) for b in PINS], None)
     far_below = (180, 230, 220, 250)  # center 100 px under the floor line (margin 40 px)
@@ -104,7 +104,7 @@ def test_below_floor_rejected_in_row_layout():
 def test_real_fallen_pin_below_its_base_is_kept_once_pin_is_gone():
     """The mirror rule needs the pin above to be standing in the same frame,
     so a genuinely fallen pin lying where its mirror would be is not rejected."""
-    t = PinTracker(Config(), FPS)
+    t = PinTracker(Config(confirm_frames=3), FPS)
     for f in range(10):
         t.update(f, [S(b) for b in PINS], None)
     body = (180, 125, 220, 145)  # pin 2 lying across its own base

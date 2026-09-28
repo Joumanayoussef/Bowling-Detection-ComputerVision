@@ -33,9 +33,11 @@ class Config:
     match_standing_frac: float = 0.5  # x width: a standing pin does not move
     match_standing_inside: float = 0.8  # ...or the detection lies >=80% inside the locked box
     match_fallen_frac: float = 0.75   # x length: a fallen pin lies away from where it stood
+    ref_follow_alpha: float = 0.05    # locked box moves toward each matched standing detection...
+    ref_follow_shape_tol: float = 0.2 # ...if its width and height are within 20% of the locked box
 
     # ── Fall signals (distances x length) ───────────────────
-    confirm_frames: int = 3           # k: a signal must persist k consecutive frames
+    confirm_frames: int = 8           # k: a signal must persist k consecutive frames (~0.27 s at 30 fps)
     car_pad_frac: float = 0.15        # car box padding for contact (signal 2)
     near_dist_frac: float = 1.5       # "car near the pin" edge distance (signal 3)
     recent_car_seconds: float = 1.0   # car near within this long before disappearance

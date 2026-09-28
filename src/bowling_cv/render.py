@@ -100,7 +100,8 @@ def draw_scene(frame: np.ndarray, t: float, detections: list[Detection], pins: P
 
     for r in rejections:
         _dashed_box(frame, r.box, REJECT_MAGENTA, max(1, th - 1))
-        _label(frame, "reflection", (r.box[0], r.box[3] + 16 * s), REJECT_MAGENTA, s * 0.8)
+        text = "rejected (mirror rule)" if r.reason.startswith("mirror") else "rejected (below floor)"
+        _label(frame, text, (r.box[0], r.box[3] + 16 * s), REJECT_MAGENTA, s * 0.8)
 
     if not pins.locked:
         for d in detections:
@@ -165,7 +166,9 @@ def summary_frame(width: int, height: int, events: list[FallEvent], n_pins: int,
     y = height * 0.12
     centered("FINAL SCORE", y, 1.4 * s, GREEN, max(2, int(2.5 * s)))
     y += 60 * s
-    centered(f"Total pins knocked: {len(events)} / {n_pins}", y, 0.8 * s, WHITE)
+    centered(f"Total pins knocked: {len(events)}", y, 0.8 * s, WHITE)
+    y += 26 * s
+    centered(f"({n_pins} pins tracked)", y, 0.45 * s, GREY)
     y += 22 * s
     cv2.line(img, (int(width * 0.12), int(y)), (int(width * 0.88), int(y)), GREY, 1)
     y += 40 * s
@@ -177,5 +180,5 @@ def summary_frame(width: int, height: int, events: list[FallEvent], n_pins: int,
     if not events:
         centered("No falls detected", y, 0.65 * s, GREY)
     if rejected is not None:
-        centered(f"Reflection detections rejected: {rejected}", height - 30 * s, 0.45 * s, GREY)
+        centered(f"Detections rejected by reflection filter: {rejected}", height - 30 * s, 0.45 * s, GREY)
     return img

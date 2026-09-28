@@ -34,8 +34,8 @@ from typing import Optional
 
 from .config import Config
 from .detector import Detection
-from .geometry import (Box, area, center, center_dist, contains_point, edge_dist, intersection, median_box,
-                       overlaps, pad, short_side, size)
+from .geometry import (Box, area, center, center_dist, contains_point, edge_dist, height, intersection, median_box,
+                       overlaps, pad, short_side, size, width)
 from .reflection import ReflectionFilter
 
 log = logging.getLogger(__name__)
@@ -51,7 +51,7 @@ SIGNAL_PRIORITY = (CAR_CONTACT, CHAIN, CLASS_TRANSITION, PROXIMITY, TIMEOUT)
 @dataclass
 class Pin:
     id: int
-    ref_box: Box                 # locked position from the setup phase
+    ref_box: Box                 # locked position; follows matched standing detections slowly
     width: float                 # shorter side of the locked box
     length: float                # longer side of the locked box
     box: Box                     # latest box (standing or fallen detection)
@@ -244,6 +244,7 @@ class PinTracker:
         used_st = set(st_match.values())
 
         # 2. Reflection filter on every other pin detection.
+        self.reflection.refresh_floor([p.ref_box for p in self.pins.values()])
         leftovers = [d for i, d in enumerate(standing) if i not in used_st]
         fallen_ok: list[Detection] = []
         for d in leftovers + fallen:
@@ -295,6 +296,14 @@ class PinTracker:
         if st_box is not None:
             p.box = st_box
             p.last_box_frame = frame
+            # Follow slow drift (hand-held camera, pin nudged but still upright),
+            # but only for same-shaped boxes: a tilting or partly occluded pin
+            # changes shape and must not drag the locked position.
+            tol = cfg.ref_follow_shape_tol
+            if abs(width(st_box) - width(p.ref_box)) <= tol * width(p.ref_box) \
+                    and abs(height(st_box) - height(p.ref_box)) <= tol * height(p.ref_box):
+                a = cfg.ref_follow_alpha
+                p.ref_box = tuple(a * s + (1 - a) * r for s, r in zip(st_box, p.ref_box))
 
         # Signal 1 evidence: seen as fallen and not as standing.
         if fa_box is not None and st_box is None:

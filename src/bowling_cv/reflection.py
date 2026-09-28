@@ -17,7 +17,7 @@ Every rejected detection is recorded with its reason.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Optional
 
 import numpy as np
@@ -125,6 +125,16 @@ class ReflectionFilter:
         self.floor, msg = FloorLine.fit([boxes[i] for i in kept], self.cfg)
         log.info("Floor line: %s", msg if self.floor else f"disabled - {msg}")
         return kept, rejected
+
+    def refresh_floor(self, pin_boxes: list[Box]) -> None:
+        """Re-fit the floor line to the pins' current reference boxes (camera drift).
+
+        Only when the setup-phase fit found a row; that decision is not revisited.
+        """
+        if self.floor is not None and pin_boxes:
+            line, _ = FloorLine.fit(pin_boxes, replace(self.cfg, floor_row_max_residual_frac=float("inf")))
+            if line is not None:
+                self.floor = line
 
     # ── Game phase ──────────────────────────────────────────
     def check(self, box: Box, standing_now: dict[int, Box]) -> Optional[tuple[str, str]]:
