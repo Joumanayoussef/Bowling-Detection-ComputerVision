@@ -244,15 +244,8 @@ python training/export_tflite.py             # -> exports/bowling_model.tflite +
 
 ## Limitations
 
-- **Top-down labels are unreliable.** The training images are mostly side views. From above, an upright pin is a round blob and a lying pin looks like a side-view silhouette, so the standing/fallen classes do not transfer. This causes both false falls in `first_video.mp4`.
-- **Merged pins.** The two adjacent red pins in `videobowling.mp4` overlap and are detected as one box, so they were merged into one tracked pin. The second red pin's fall is the one missed fall in the side-view results.
-- **Tuned, indicative results.** k = 8 was chosen on the same three videos that are evaluated, and there are only 11 true falls in total. The numbers are indicative, not a held-out benchmark.
-- **Reflection filter.** The spatial reflection rules did not reduce false falls on these videos. Temporal confirmation did (4 → 2 false falls).
-- **Small dataset.** 535 images in the Roboflow export, including 4× augmented copies of the training images. Validation and test are the same 28-image split, with only 4 balls and 8 cars.
-- **Toy setup, not a real alley.** Plastic pins, a small RC car or a light ball, indoor floors. Real bowling-alley footage would need new training data.
-- **Heuristics.**
-  - Car contact assumes a touched pin falls, which is false when the car only nudges it.
-  - Timing is the onset of the evidence and can lead the visible fall by up to ~0.75 s.
-  - Setup assumes the pins are standing and undisturbed in the first second in which they are detected.
-- **Android app** is a prototype with the earlier, simpler tracker (see [above](#android-app-prototype)).
-- **Webcam script.** `live_camera.py` shares all modules with the video analyzer. Its clock-based pipeline was exercised on video frames, but it has not been run against a live camera.
+- **Toy setup and small dataset.** Plastic pins, an RC car or a light ball, indoor floors; 535 training images (incl. augmented copies) and a shared 28-image validation/test split. Real bowling-alley footage would need new training data.
+- **Camera angle.** Training images are mostly side views, so standing/fallen labels are unreliable from directly above (both false falls in the top-down video). Adjacent overlapping pins can also merge into one tracked pin.
+- **Indicative results.** Thresholds (k = 8) were tuned on the same 3 videos used for evaluation, with only 11 true falls in total.
+- **Heuristic assumptions.** Car contact assumes a touched pin falls; fall times mark the onset of evidence (up to ~0.75 s early); pins must be standing and visible during the first second.
+- **Prototypes.** The Android app uses an earlier, simpler tracker (see [Android app](#android-app-prototype)), and `live_camera.py` has not been tested on a live webcam.
