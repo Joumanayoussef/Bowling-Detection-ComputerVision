@@ -1,0 +1,4 @@
+ball
+car
+fallen pin
+standing pin

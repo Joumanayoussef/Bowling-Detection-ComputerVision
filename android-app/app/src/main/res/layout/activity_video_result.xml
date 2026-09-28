@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#000000">
+
+    <!-- Video frame playback -->
+    <ImageView
+        android:id="@+id/frameView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:scaleType="fitCenter"
+        android:background="#111111"/>
+
+    <!-- Progress bar during analysis -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="100"
+        android:progress="0"
+        android:indeterminate="false"
+        android:visibility="gone"/>
+
+    <!-- Status text -->
+    <TextView
+        android:id="@+id/statusText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Analyzing..."
+        android:textColor="#FFFFFF"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:padding="8dp"/>
+
+    <!-- Results panel -->
+    <LinearLayout
+        android:id="@+id/resultPanel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#EE111111"
+        android:padding="12dp"
+        android:visibility="gone">
+
+        <!-- Score + path info -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <TextView
+                android:id="@+id/scoreText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Score: 0"
+                android:textColor="#4CAF50"
+                android:textSize="22sp"
+                android:textStyle="bold"
+                android:gravity="center"/>
+
+            <TextView
+                android:id="@+id/pathText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Path: 0 pts"
+                android:textColor="#00BCD4"
+                android:textSize="14sp"
+                android:gravity="center"/>
+
+        </LinearLayout>
+
+        <!-- Hit order list -->
+        <TextView
+            android:id="@+id/hitListText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textColor="#FFFFFF"
+            android:textSize="13sp"
+            android:padding="8dp"
+            android:fontFamily="monospace"/>
+
+        <!-- Playback controls -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="8dp">
+
+            <Button
+                android:id="@+id/btnBack"
+                android:layout_width="100dp"
+                android:layout_height="42dp"
+                android:text="← Back"
+                android:textSize="12sp"
+                android:backgroundTint="#555555"
+                android:layout_marginEnd="8dp"/>
+
+            <Button
+                android:id="@+id/btnRestart"
+                android:layout_width="100dp"
+                android:layout_height="42dp"
+                android:text="↺ Restart"
+                android:textSize="12sp"
+                android:backgroundTint="#1565C0"
+                android:layout_marginEnd="8dp"/>
+
+            <Button
+                android:id="@+id/btnPlayPause"
+                android:layout_width="100dp"
+                android:layout_height="42dp"
+                android:text="⏸ Pause"
+                android:textSize="12sp"
+                android:backgroundTint="#00796B"/>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>
