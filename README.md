@@ -1,10 +1,63 @@
-# BowlingCV
+# BowlingCV — Pin-Fall Detection and Timestamping
 
-Detects which pins fall, and when, in videos of a toy bowling setup (an RC car or a ball knocking over plastic pins). A YOLOv8n detector finds pins, the car and the ball. A tracker locks each pin's identity at the start, and five fall signals decide when a pin has gone down. The output is an annotated video, a JSON event log and a final score screen. An Android app runs the same detector offline with TFLite.
+BowlingCV watches a video of a (toy) bowling setup and reports which pins fell and when. A YOLOv8n detector, fine-tuned on a custom 4-class dataset (ball, car, standing pin, fallen pin), finds the objects in each frame. A tracking pipeline then:
+
+- locks each pin's position at the start;
+- detects each fall with five independent signals, confirmed over several frames;
+- outputs an annotated video, per-fall timestamps (JSON) and a final summary screen.
+
+The same detector also runs offline on Android through TFLite.
 
 ![demo](docs/demo.gif)
 
-*Low side view, hand-held camera: the car tips the yellow pin (car contact), then the red pin (car nearby, then the pin disappears). The clip ends on the summary screen.*
+*RC-car mode, low side view, hand-held camera: the car tips the yellow pin (car contact), then the red pin (car nearby, then the pin disappears). The clip ends on the summary screen.*
+
+| Thrown-ball mode: side view, reflective floor | Final summary screen |
+|---|---|
+| ![side view](docs/side_view_reflective_floor.jpg) | ![summary](docs/final_summary.jpg) |
+
+> **Scope:** the setup uses toy plastic pins on indoor floors, not a real bowling alley. Real-alley footage has different pins, distances, lighting and camera angles, so it would need new training data.
+
+## Two play modes, one system
+
+Both modes use the **same model** (`models/best.pt`) and the **same pipeline** (`analyze_video.py`); nothing is mode-specific.
+
+| Mode | What knocks the pins | Evaluation videos |
+|---|---|---|
+| **(a) Thrown-ball bowling** | a ball rolled by hand at a row of 6 pins | `videobowling.mp4` (side view, reflective floor, 3 rolls) |
+| **(b) RC-car bowling** (originally a course bonus task) | a remote-controlled car driven into the pins | `whatsapp_2026-05-13_2.53.32PM.mp4` (low side view, 2 pins); `first_video.mp4` (top-down, 4 pins) |
+
+The car-based signals (contact, proximity, timeout) simply never fire in ball videos. There, falls are found by class transition and chain reaction.
+
+## Android app (prototype)
+
+[`android-app/`](android-app/) is a Kotlin app (minSdk 26, targetSdk 34) that runs the detector **offline on the device**:
+
+- **Detection:** `TFLiteDetector.kt` runs a float32 TFLite export of the YOLOv8n model (320×320 input, YOLOv8 output decoding and per-class NMS).
+- **Live camera:** a **CameraX** `ImageAnalysis` pipeline (`CameraAnalyzer.kt`) draws boxes, pin states and the car path over the preview.
+- **Video upload:** `VideoAnalyzer.kt` analyzes a video picked from the gallery and shows the result.
+
+**This is a prototype.** It uses an earlier, simpler tracker:
+
+- `PinTracker.kt`: a pin is marked fallen on a standing → fallen class transition;
+- `ScoreManager.kt`: a pin is also marked fallen when the car's center comes within 80 px of it.
+
+It has **not** been updated to the five-signal logic, locked pin IDs or temporal confirmation described below, and it was not part of the evaluation.
+
+**Build (verified):** `./gradlew assembleDebug` succeeds on Windows with the JDK bundled with Android Studio (JBR 21), Android SDK platform 34 and Gradle 8.5 via the included wrapper. The APK is not committed.
+
+```bash
+cd android-app
+# point Gradle at your Android SDK (or set ANDROID_HOME); this file is git-ignored
+echo "sdk.dir=/path/to/Android/Sdk" > local.properties
+# Windows:  echo sdk.dir=C\:/Users/<you>/AppData/Local/Android/Sdk > local.properties
+export JAVA_HOME="/path/to/Android Studio/jbr"   # any JDK 17-21
+./gradlew assembleDebug                          # Windows: gradlew.bat assembleDebug
+# -> app/build/outputs/apk/debug/app-debug.apk
+adb install app/build/outputs/apk/debug/app-debug.apk
+```
+
+Or open `android-app/` in Android Studio and run it. The model and labels are already in `app/src/main/assets/`. To use newly trained weights, run `training/export_tflite.py` and copy `exports/bowling_model.tflite` and `exports/labels.txt` into that folder.
 
 ## Pipeline
 
@@ -25,7 +78,7 @@ flowchart LR
 
 ### Pin identity (the over-counting fix)
 
-The old script used YOLO tracker IDs. When a detection dropped out, the pin came back with a new ID and was counted again; it showed a score of 3 on a two-pin video. Now:
+An earlier script used YOLO tracker IDs. When a detection dropped out, the pin came back with a new ID and was counted again; it showed a score of 3 on a two-pin video. Now:
 
 - **Setup** (1 s from the first frame with a standing pin): standing-pin boxes are clustered by center distance. A pin must appear in at least 30% of setup frames. Duplicates are merged, and IDs are assigned left to right.
 - **Afterwards** every detection is matched to the nearest *locked* pin. Standing detections match within half a pin width, or when they lie ≥80% inside the locked box (a partly occluded pin). **No pin IDs are created after setup.**
@@ -68,7 +121,7 @@ Each signal is implemented in [`pin_tracker.py`](src/bowling_cv/pin_tracker.py),
 
 ### Detector (YOLOv8n, 320 px, run stopped after 81 of 100 epochs)
 
-From [`training/results_bowling_v4.csv`](training/results_bowling_v4.csv), best epoch (58). The per-class values were reproduced with `training/validate.py`:
+From [`training/results_bowling_v4.csv`](training/results_bowling_v4.csv), best epoch (58). The per-class values were reproduced with `training/validate.py`.
 
 | | mAP50 | mAP50-95 | Precision | Recall |
 |---|---|---|---|---|
@@ -81,10 +134,7 @@ From [`training/results_bowling_v4.csv`](training/results_bowling_v4.csv), best 
 | ball | 0.645 | 4 |
 | car | 0.558 | 8 |
 
-**Caveats:**
-
-- The dataset's `data.yaml` sets `test` = `val`, so these are validation numbers. There is no separate held-out test set.
-- The validation split is only 28 images, with 4 ball and 8 car instances, so the ball and car AP values are very noisy.
+Validation and test are the **same 28-image split**: the dataset's `data.yaml` sets `test` = `val`, so these are validation numbers with no separate held-out test set. With only 4 ball and 8 car instances, the ball and car AP values are very noisy.
 
 ### Fall detection on real videos
 
@@ -92,16 +142,39 @@ Three raw videos were annotated by hand, frame by frame; see [`eval/ground_truth
 
 A detected fall counts as **correct** if that pin really fell and the time is within ±1 s. Every other detection is **false**, and a true fall with no correct detection is **missed**.
 
-| Video | Setup | True falls | Filter ON: detected / correct / **false** / missed | Filter OFF: detected / correct / **false** / missed | Spatial-filter rejections |
+**Summary by camera view** (default settings, filter ON):
+
+| Camera view | Videos | True falls | Correct | False | Missed |
 |---|---|---|---|---|---|
-| `first_video.mp4` | top-down, RC car, 4 pins | 3 | 4 / 2 / **2** / 1 | 4 / 1 / **3** / 2 | 0 |
-| `whatsapp_2026-05-13_2.53.32PM.mp4` | low side view, RC car, 2 pins, hand-held camera drifts | 2 | 2 / 2 / **0** / 0 | 2 / 2 / **0** / 0 | 6 |
-| `videobowling.mp4` | side view, reflective floor, thrown ball (no car), 6 pins, 3 rolls | 6 | 5 / 5 / **0** / 1 | 5 / 4 / **1** / 2 | 71 |
+| **Side view** | `whatsapp…`, `videobowling.mp4` | 8 | **7** | **0** | 1 |
+| **Top-down** | `first_video.mp4` | 3 | 2 | 2 | 1 |
+
+**Per video, with and without the reflection filter** (from [`eval/results.md`](eval/results.md)):
+
+| Video | Mode / setup | True falls | Filter ON: detected / correct / **false** / missed | Filter OFF: detected / correct / **false** / missed | Spatial-filter rejections |
+|---|---|---|---|---|---|
+| `first_video.mp4` | RC car, top-down, 4 pins | 3 | 4 / 2 / **2** / 1 | 4 / 1 / **3** / 2 | 0 |
+| `whatsapp_2026-05-13_2.53.32PM.mp4` | RC car, low side view, 2 pins, hand-held camera drifts | 2 | 2 / 2 / **0** / 0 | 2 / 2 / **0** / 0 | 6 |
+| `videobowling.mp4` | thrown ball, side view, reflective floor, 6 pins, 3 rolls | 6 | 5 / 5 / **0** / 1 | 5 / 4 / **1** / 2 | 71 |
 | **Total** | | 11 | 11 / 9 / **2** / 2 | 11 / 7 / **4** / 4 | |
 
-Per-event detail is in [`eval/results.md`](eval/results.md).
+**Per event** (filter ON):
 
-**What the filter actually did.** Turning the filter on cut false falls from 4 to 2. An ablation on the same cached detections shows that **all of that improvement comes from temporal persistence, not from the spatial reflection rules:**
+| Video | Pin | Detected (s) | True (s) | Signal | Verdict |
+|---|---|---|---|---|---|
+| `first_video.mp4` | blue | 1.40 | 3.10 | class_transition | false |
+| `first_video.mp4` | green | 1.43 | 2.00 | class_transition | correct |
+| `first_video.mp4` | yellow | 1.47 | - (never falls) | car_contact | false |
+| `first_video.mp4` | red | 4.80 | 5.70 | car_contact | correct |
+| `whatsapp_2026-05-13_2.53.32PM.mp4` | yellow | 4.26 | 4.55 | car_contact | correct |
+| `whatsapp_2026-05-13_2.53.32PM.mp4` | red | 9.97 | 10.15 | proximity_disappearance | correct |
+| `videobowling.mp4` | red (front) | 4.43 | 4.60 | class_transition | correct |
+| `videobowling.mp4` | right yellow | 12.05 | 12.80 | chain_reaction | correct |
+| `videobowling.mp4` | left yellow | 12.35 | 12.70 | chain_reaction | correct |
+| `videobowling.mp4` | right blue | 13.58 | 12.60 | class_transition | correct |
+| `videobowling.mp4` | left blue | 25.27 | 25.30 | chain_reaction | correct |
+
+**What the filter actually did.** Turning the filter on cut false falls from 4 to 2. An ablation on the same cached detections shows that **all of that improvement comes from temporal confirmation (k = 8), not from the spatial reflection rules:**
 
 | Configuration | Correct / false (first / whatsapp / videobowling) |
 |---|---|
@@ -116,24 +189,13 @@ I inspected the spatial rejections frame by frame. In these videos YOLO never de
 - a fallen pin lying in front of a standing one (already counted, so harmless here);
 - the car, mislabelled "fallen pin" (the 6 in the WhatsApp video).
 
-So **the spatial reflection filter did not reduce false falls on any of these videos.** It is implemented and unit-tested on synthetic mirror detections, but it has not been shown to help on real footage. It can also reject a real object lying directly in front of a standing pin.
+The spatial rules are implemented and unit-tested on synthetic mirror detections, but they have not been shown to help on real footage. They can also reject a real object lying directly in front of a standing pin.
 
-The value k = 8 was chosen on these same three videos, so the "filter ON" numbers are tuned, not held-out.
+**Top-down failure case.** ![top-down](docs/top_down_view.jpg)
 
-**Failure case: top-down view.** ![top-down](docs/top_down_view.jpg)
+In `first_video.mp4` YOLO labels the upright blue pin "fallen" for over a second (false `class_transition` at 1.40 s; it really falls at 3.1 s). The car also brushes the yellow pin without knocking it over (false `car_contact` at 1.47 s).
 
-The detector's standing/fallen classes do not transfer to a camera looking straight down. There, an upright pin is a round blob and a lying pin looks like a side-view silhouette. In `first_video.mp4` YOLO labels the upright blue pin "fallen" for over a second (false `class_transition` at 1.40 s; it really falls at 3.1 s). The car also brushes the yellow pin without knocking it over (false `car_contact` at 1.47 s).
-
-Note: an earlier version of this project reported 4 falls at 1.50, 2.00, 2.57 and 3.47 s for this video. Frame-by-frame inspection shows 3 falls: green ~2.0 s, blue ~3.1 s, red ~5.7 s. The yellow pin is pushed but stays upright.
-
-**Other observations.**
-
-- `videobowling.mp4`: one of the two red pins is never detected separately from the other (their boxes overlap), so it is never locked and its fall is always missed.
-- Chain-reaction onsets can be early by up to ~0.75 s. The "missing" streak starts as soon as the ball occludes a pin.
-
-| Side view, reflective floor | Final summary screen |
-|---|---|
-| ![side view](docs/side_view_reflective_floor.jpg) | ![summary](docs/final_summary.jpg) |
+An earlier version of this project reported 4 falls at 1.50, 2.00, 2.57 and 3.47 s for this video. Frame-by-frame inspection shows 3 falls: green ~2.0 s, blue ~3.1 s, red ~5.7 s. The yellow pin is pushed but stays upright.
 
 ## Output
 
@@ -178,25 +240,17 @@ python training/export_tflite.py             # -> exports/bowling_model.tflite +
 
 `models/best.pt` (24.5 MB) is the `bowling_v4` checkpoint used for all results above.
 
-## Android app
-
-[`android-app/`](android-app/) is a Kotlin app (minSdk 26):
-
-- **Detection:** `TFLiteDetector.kt` runs `bowling_model.tflite` **offline**. It takes 320×320 float32 input, decodes the YOLOv8 output and applies per-class NMS.
-- **Live camera:** a **CameraX** `ImageAnalysis` pipeline (`CameraAnalyzer.kt`) draws an overlay.
-- **Video files:** `VideoAnalyzer.kt` analyzes a picked video and shows the result.
-
-Limitations of the app:
-
-- It still uses its **original** Kotlin tracker (`PinTracker.kt`, `ScoreManager.kt`). The Python tracker, fall signals and reflection filter described above have **not** been ported.
-- Only the Gradle build files and wrapper properties are included; there are no `gradlew` scripts or wrapper jar. Open it in Android Studio, or run `gradle wrapper` first.
-- The app was not rebuilt or tested as part of this cleanup.
-
 ## Limitations
 
-- **Small dataset.** 535 images in the Roboflow export, including 4× augmented copies of the training images. Validation has 28 images, with only 4 balls and 8 cars. Validation = test.
-- **Toy setup.** Plastic pins, a small RC car or a light ball, indoor floors. Only one lane-like arrangement per video, and only three evaluation videos with 11 true falls. That is far too few to generalise from.
-- **Detection errors drive most mistakes.** Examples: standing and fallen confused in top-down views, the ball labelled as a pin, overlapping pins merged into one box. The tracker cannot recover a pin that is never detected during setup.
-- **Heuristics.** Car contact assumes a touched pin falls, which is false when the car only nudges it. Timing is the onset of the evidence and can lead the visible fall by up to ~0.75 s. Setup assumes the pins are standing and undisturbed in the first second in which they are detected.
-- **Reflection filter.** Implemented, but it showed no measurable benefit on the available footage (see above).
+- **Top-down labels are unreliable.** The training images are mostly side views. From above, an upright pin is a round blob and a lying pin looks like a side-view silhouette, so the standing/fallen classes do not transfer. This causes both false falls in `first_video.mp4`.
+- **Merged pins.** The two adjacent red pins in `videobowling.mp4` overlap and are detected as one box, so they were merged into one tracked pin. The second red pin's fall is the one missed fall in the side-view results.
+- **Tuned, indicative results.** k = 8 was chosen on the same three videos that are evaluated, and there are only 11 true falls in total. The numbers are indicative, not a held-out benchmark.
+- **Reflection filter.** The spatial reflection rules did not reduce false falls on these videos. Temporal confirmation did (4 → 2 false falls).
+- **Small dataset.** 535 images in the Roboflow export, including 4× augmented copies of the training images. Validation and test are the same 28-image split, with only 4 balls and 8 cars.
+- **Toy setup, not a real alley.** Plastic pins, a small RC car or a light ball, indoor floors. Real bowling-alley footage would need new training data.
+- **Heuristics.**
+  - Car contact assumes a touched pin falls, which is false when the car only nudges it.
+  - Timing is the onset of the evidence and can lead the visible fall by up to ~0.75 s.
+  - Setup assumes the pins are standing and undisturbed in the first second in which they are detected.
+- **Android app** is a prototype with the earlier, simpler tracker (see [above](#android-app-prototype)).
 - **Webcam script.** `live_camera.py` shares all modules with the video analyzer. Its clock-based pipeline was exercised on video frames, but it has not been run against a live camera.
